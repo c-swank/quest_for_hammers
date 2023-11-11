@@ -1,0 +1,38 @@
+{
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+        "Meadow.json": {
+            "scale": 0.87340625,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 816.344055243479,
+                "y": 320.01144942573967
+            }
+        },
+        "Meadow.json#Plant": {
+            "scaleInDock": 1
+        },
+        "Meadow.json#Props": {
+            "scaleInDock": 1
+        },
+        "Meadow.json#Shadow": {
+            "scaleInDock": 1
+        },
+        "Meadow.json#Shadow Plant": {
+            "scaleInDock": 1
+        },
+        "Meadow.json#Tileset Grass": {
+            "scaleInDock": 1
+        }
+    },
+    "last.exportedFilePath": "/Users/chandler/hammer_quest/src/assets/maps",
+    "map.lastUsedExportFilter": "All Files (*)",
+    "openFiles": [
+    ],
+    "project": "Maps.tiled-project",
+    "recentFiles": [
+        "Meadow.json"
+    ]
+}
