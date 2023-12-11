@@ -1,4 +1,4 @@
-import { Player } from "../player";
+import { Player } from "../characters/player";
 
 export default class Weapon extends Phaser.Physics.Arcade.Sprite {
   private player: Player;

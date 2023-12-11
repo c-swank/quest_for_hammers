@@ -27,7 +27,7 @@ export class HealthBar extends Phaser.GameObjects.Graphics {
 
   private updateHealthBar() {
     // Draw the health bar background
-    console.log(this.character.getData("health"));
+    // console.log(this.character.getData("health"));
     this.clear();
     this.fillStyle(0x000000, 0.5);
     this.fillRect(0, 0, this.width, 5);

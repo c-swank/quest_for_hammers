@@ -1,16 +1,81 @@
 import Phaser from "phaser";
-import { AttackCursors, GameState, IGameState } from "..";
+import merge from "lodash.merge";
+import { AttackCursors, GameState, IGameState } from "../../";
 import { IBaseNpc } from "../npcs/base_npc";
-import Weapon from "../weapons/hammer";
+import Weapon from "../../weapons/hammer";
+import { HealthBar } from "../../ui/healthbar";
 
-export class Player extends Phaser.GameObjects.Rectangle {
-  private movementCursors!: Phaser.Types.Input.Keyboard.CursorKeys;
+interface MovementKeys {
+  up: Phaser.Input.Keyboard.Key;
+  left: Phaser.Input.Keyboard.Key;
+  down: Phaser.Input.Keyboard.Key;
+  right: Phaser.Input.Keyboard.Key;
+};
+
+interface AttackObj {
+  cooldown: boolean;
+  time: number;
+  damage: number;
+  multiplier: number;
+}
+
+const default_options = {
+  health: 1000,
+  width: 32,
+  height: 32
+}
+
+export class Player extends Phaser.Physics.Arcade.Sprite {
+  // private movementCursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private attackCursors!: AttackCursors;
   public name: string = "player";
   // private weapon: Weapon;
+  private movementCursors!: {
+    up: Phaser.Input.Keyboard.Key,
+    left: Phaser.Input.Keyboard.Key,
+    down: Phaser.Input.Keyboard.Key,
+    right: Phaser.Input.Keyboard.Key
+  };
+  health: number;
+  maxHealth: number;
+  private healthBar: HealthBar;
+  score: number = 0;
+  private cooldowns: AttackObj[] = [
+    {
+      cooldown: false,
+      time: 500,
+      damage: 200,
+      multiplier: 1,
+    },
+    {
+      cooldown: false,
+      time: 1500,
+      damage: 500,
+      multiplier: 1,
+    },
+    {
+      cooldown: false,
+      time: 5000,
+      damage: 1000,
+      multiplier: 1,
+    }
+  ]
+  public detectable = true;
 
-  constructor(scene: Phaser.Scene) {
-    super(scene, scene.scale.width / 2, scene.scale.height / 2, 32, 32, 0x000000);
+  constructor(scene: Phaser.Scene, options?: any) {
+    options = merge(default_options, options);
+    const { health, speed, width, height, extraDestroy } = options;
+
+    const color = options.color instanceof Phaser.Display.Color ? options.color : Phaser.Display.Color.GetColor32(0,0,0,0);
+    const colorName = `rectangle-${color.color32}`;
+
+    const graphics = scene.add.graphics();
+    graphics.fillStyle(color.color, 1);
+    graphics.fillRect(0, 0, 32, 32);
+    graphics.generateTexture(colorName, 32, 32);
+    graphics.destroy();
+
+    super(scene, scene.scale.width / 2, scene.scale.height / 2, colorName);
     scene.add.existing(this);
     scene.physics.add.existing(this);
     
@@ -24,7 +89,7 @@ export class Player extends Phaser.GameObjects.Rectangle {
       body.setBounce(0);
     }
 
-    this.movementCursors = scene.input.keyboard.createCursorKeys();
+    // this.movementCursors = scene.input.keyboard.createCursorKeys();
 
     // Set up the camera to follow the player
     scene.cameras.main.startFollow(this);
@@ -33,6 +98,21 @@ export class Player extends Phaser.GameObjects.Rectangle {
 
     // this.weapon = new Weapon(scene, this);
     this.attackCursors = (scene as IGameState).createAttackKeys();
+
+    this.movementCursors = scene.input.keyboard.addKeys({
+      up: Phaser.Input.Keyboard.KeyCodes.W,
+      left: Phaser.Input.Keyboard.KeyCodes.A,
+      down: Phaser.Input.Keyboard.KeyCodes.S,
+      right: Phaser.Input.Keyboard.KeyCodes.D
+    }) as MovementKeys;
+
+    this.health = health;
+    this.maxHealth = health;
+
+    this.setData("health",this.health);
+    this.setData("maxHealth", this.maxHealth);
+
+    this.healthBar = new HealthBar(scene, this);
   }
 
   update() {
@@ -70,19 +150,38 @@ export class Player extends Phaser.GameObjects.Rectangle {
     }
 
     if (this.attackCursors.primary.isDown) {
-      this.attack(20);
+      this.attack(0);
     }
     if (this.attackCursors.secondary.isDown) {
-      this.attack(50);
+      this.attack(1);
     }
     if (this.attackCursors.tertiary.isDown) {
-      this.attack(100);
+      this.attack(2);
     }
+
+    this.healthBar.update();
 
     // this.weapon.update();
   }
 
-  attack(damageValue: number) {
+  startCooldown(attackObjIndex: number) {
+    const { time } = this.cooldowns[attackObjIndex];
+    this.cooldowns[attackObjIndex].cooldown = true;
+    setTimeout(() => {
+      this.cooldowns[attackObjIndex].cooldown = false;
+    }, time);
+  }
+
+  attack(attackObjIndex: number) {
+    const { cooldown, damage } = this.cooldowns[attackObjIndex];
+
+    if (cooldown) {
+      console.log('skipping attack!');
+      return;
+    }
+
+    this.startCooldown(attackObjIndex);
+
     const npcsGroup = (this.scene as IGameState).getGroupByName("NPCs") as Phaser.Physics.Arcade.Group;
     const npcs = npcsGroup.getChildren() as IBaseNpc[];
     console.log("Attacking npcs!", npcs);
@@ -91,7 +190,7 @@ export class Player extends Phaser.GameObjects.Rectangle {
       const distance = Phaser.Math.Distance.Between(this.x, this.y, npc.x, npc.y);
 
       if (distance <= 150) {
-        npc.healthUpdates(damageValue);
+        npc.healthUpdates(damage);
       }
     }
   }

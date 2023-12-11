@@ -1,6 +1,6 @@
 import Phaser, { Physics } from "phaser";
 import sky from "./assets/sky.png";
-import { Player } from "./player";
+import { Player } from "./characters/player";
 import mapJson from "./assets/maps/Meadow.json";
 import mapImage from "./assets/maps/Meadow.png";
 import TsGrass from "./assets/maps/TilesetGrass.png";
@@ -8,7 +8,8 @@ import TsPlant from "./assets/maps/Plant.png";
 import TsProps from "./assets/maps/Props.png";
 import TsShadowPlant from "./assets/maps/ShadowPlant.png";
 import TsStoneGround from "./assets/maps/TilesetStoneGround.png";
-import { BaseNpc } from "./npcs/base_npc";
+import { BaseNpc } from "./characters/npcs/base_npc";
+import eventManager, { EventManager } from "./gamestate/events";
 // import playerImage from "./assets/player.png";
 
 const config = {
@@ -55,9 +56,21 @@ export class GameState extends Phaser.Scene {
   private propsLayer!: Phaser.Tilemaps.TilemapLayer | null;
   private plantLayer!: Phaser.Tilemaps.TilemapLayer | null;
   private shadowLayer!: Phaser.Tilemaps.TilemapLayer | null;
+  // private eventManager: EventManager;
 
   // UI elements
   private resetButton!: Phaser.GameObjects.Text;
+  private gameStateText: { 
+    [key: string]: {
+      text: Phaser.GameObjects.Text,
+      place: [number, number]
+    }
+  } = {};
+  private gameStateTextContent: {[key: string]: number} = {
+    spawned: 0,
+    killed: 0,
+    damage: 0, 
+  };
   private colliderCount: number = 0;
   private damageText: string[] = [];
 
@@ -74,6 +87,14 @@ export class GameState extends Phaser.Scene {
     this.load.image("tsProps", TsProps);
     this.load.image("tsShadowPlant", TsShadowPlant);
     this.load.image("tsStoneGround", TsStoneGround);
+    eventManager.on('npc:destroyed', (npc: BaseNpc) => {
+      console.log(`NPC ${Object.keys(npc)} was destroyed`);
+      this.gameStateTextContent.killed += 1;
+    });
+
+    eventManager.on('npc:damaged', (damage: number) => {
+      this.gameStateTextContent.damage += damage;
+    });
   }
 
   create() {
@@ -141,7 +162,7 @@ export class GameState extends Phaser.Scene {
     this.physics.add.collider(this.npcsGroup, this.player);
     // this.npcsGroup.enableBody = true;
     // Initialize NPC's
-    this.spawnNpcs(10);
+    this.spawnNpcs(1);
 
     // Generate colliders between all game objects
     // this.generateColliders();
@@ -161,8 +182,10 @@ export class GameState extends Phaser.Scene {
     const colliders = this.physics.world.colliders.getActive().length;
     if (colliders !== this.colliderCount) {
       this.colliderCount = colliders;
-      console.log(`Colliders: ${this.colliderCount}`);
+      // console.log(`Colliders: ${this.colliderCount}`);
     }
+
+    this.updateUi();
   }
 
   spawnNpcs(quantity: number) {
@@ -176,7 +199,9 @@ export class GameState extends Phaser.Scene {
       npc.extraDestroy = this.npcsGroup.remove.bind(this.npcsGroup);
     }
 
-    console.log(this.npcsGroup);
+    this.gameStateTextContent.spawned += quantity;
+
+    // console.log(this.npcsGroup);
   }
 
   generateColliders() {
@@ -195,7 +220,7 @@ export class GameState extends Phaser.Scene {
 
   createUi() {
     // Add a reset button
-    this.resetButton = this.add.text(10, 10, "Spawn NPCs", { color: "#ffffff" })
+    const resetButton = this.add.text(10, 10, "Spawn NPCs", { color: "red" })
       .setInteractive()
       .on("pointerdown", () => {
         // Reset the game state value
@@ -204,11 +229,31 @@ export class GameState extends Phaser.Scene {
         this.spawnNpcs(10);
         // this.generateColliders();
       });
-    this.resetButton.setScrollFactor(0);
+    resetButton.setScrollFactor(0);
 
     // Add a game state text box
-    // this.gameStateValue = 0;
-    // this.gameStateText = this.add.text(10, 50, `Game State: ${this.gameStateValue}`, { fill: "#ffffff" });
+    // const gameStateValue = 0;
+    // this.gameStateText = this.add.text(10, 50, `Game State: ${gameStateValue}`, { color: "#ffffff" });
+    // this.gameStateText.setScrollFactor(0);
+
+    let nextSpace = 40;
+    Object.keys(this.gameStateTextContent).forEach((key) => {
+      const text = this.add.text(10, nextSpace, `${key}: ${this.gameStateTextContent[key]}`);
+      text.setScrollFactor(0);
+      this.gameStateText[key] = {
+        text,
+        place: [10, nextSpace],
+      };
+
+      nextSpace += 30;
+    });
+  }
+
+  updateUi() {
+    Object.keys(this.gameStateText).forEach((key) => {
+      const textObject = this.gameStateText[key];
+      textObject.text.setText(`${key}: ${this.gameStateTextContent[key]}`);
+    });
   }
 
   getGroupByName(name: string): Phaser.Physics.Arcade.Group | undefined {

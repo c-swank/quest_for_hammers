@@ -1,9 +1,8 @@
 import Phaser, { Physics } from "phaser";
 import merge from "lodash.merge";
-import { HealthBar } from "../../ui/healthbar";
+import { HealthBar } from "../ui/healthbar";
 
-export interface IBaseNpc extends Phaser.Physics.Arcade.Sprite {
-  npc: Boolean;
+export interface IBaseCharacter extends Phaser.Physics.Arcade.Sprite {
   health: number;
   speed: number;
   extraDestroy: Function;
@@ -17,7 +16,7 @@ const default_options = {
   height: 32
 }
 
-export class BaseNpc extends Phaser.Physics.Arcade.Sprite {
+export class BaseCharacter extends Phaser.Physics.Arcade.Sprite {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private npc: Boolean = true;
   private health: number;
@@ -69,20 +68,6 @@ export class BaseNpc extends Phaser.Physics.Arcade.Sprite {
     this.extraDestroy = extraDestroy;
 
     this.healthBar = new HealthBar(scene, this);
-
-    // Define a callback function to filter out other NPC's and the player
-    // const npcCollisionFilter = (npc: Phaser.GameObjects.GameObject, other: Phaser.GameObjects.GameObject) => {
-    //   return other instanceof Phaser.GameObjects;
-    // };
-
-    // // Set the NPC's body to not collide with other NPC's or with the player
-    // const npcCollider = scene.physics.add.collider(this, other, npcCollisionFilter);
-
-    // npcCollider.collideCallback = (npc: Phaser.GameObjects.GameObject, other: Phaser.GameObjects.GameObject) => {
-    //   // Stop the NPC's physics body if they collide with another NPC or with the player
-    //   const body = npc.body as Phaser.Physics.Arcade.Body;
-    //   body.setVelocity(0, 0);
-    // };
   }
 
   healthUpdates(value: number) {
@@ -91,14 +76,6 @@ export class BaseNpc extends Phaser.Physics.Arcade.Sprite {
     console.log("reducing health by", value);
 
     if (this.health <= 0) {
-      // const colliders = this.scene.physics.world.colliders.getActive();
-      // // colliders.find((collider: Physics.Arcade.Collider) => collider.object1 === this.body || collider.bodyB === this.body)?.destroy();
-      // for (const collider of colliders) {
-      //   if (collider.object1 === this.body || collider.object2 === this.body) {
-      //     collider.destroy();
-      //   }
-      // }
-      // console.log(colliders);
       this.destroy(false);
     }
   }
@@ -134,38 +111,6 @@ export class BaseNpc extends Phaser.Physics.Arcade.Sprite {
       }
 
       this.healthBar.update();
-
-      // this.healthUpdates(1);
     }
-
-    // Prevent jittering and clipping effect when the player collides with the world boundary
-    // if (body && (body.blocked.left || body.blocked.right || body.blocked.up || body.blocked.down)) {
-    //   const overlapLeft = Math.abs(body.left - this.scene.physics.world.bounds.left);
-    //   const overlapRight = Math.abs(body.right - this.scene.physics.world.bounds.right);
-    //   const overlapUp = Math.abs(body.top - this.scene.physics.world.bounds.top);
-    //   const overlapDown = Math.abs(body.bottom - this.scene.physics.world.bounds.bottom);
-
-    //   if (overlapLeft < overlapRight && overlapLeft < overlapUp && overlapLeft < overlapDown) {
-    //     this.x += overlapLeft;
-    //   } else if (overlapRight < overlapLeft && overlapRight < overlapUp && overlapRight < overlapDown) {
-    //     this.x -= overlapRight;
-    //   } else if (overlapUp < overlapLeft && overlapUp < overlapRight && overlapUp < overlapDown) {
-    //     this.y += overlapUp;
-    //   } else if (overlapDown < overlapLeft && overlapDown < overlapRight && overlapDown < overlapUp) {
-    //     this.y -= overlapDown;
-    //   }
-    // }
-
-    // if (this.cursors.left.isDown) {
-    //   this.x -= speed * this.scene.game.loop.delta / 1000;
-    // } else if (this.cursors.right.isDown) {
-    //   this.x += speed * this.scene.game.loop.delta / 1000;
-    // }
-
-    // if (this.cursors.up.isDown) {
-    //   this.y -= speed * this.scene.game.loop.delta / 1000;
-    // } else if (this.cursors.down.isDown) {
-    //   this.y += speed * this.scene.game.loop.delta / 1000;
-    // }
   }
 }
