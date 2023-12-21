@@ -1,4 +1,5 @@
 import Phaser, { Physics } from "phaser";
+import UIPlugin from "phaser3-rex-plugins/templates/ui/ui-plugin.js";
 import sky from "./assets/sky.png";
 import { Player } from "./characters/player";
 import mapJson from "./assets/maps/Meadow.json";
@@ -10,23 +11,9 @@ import TsShadowPlant from "./assets/maps/ShadowPlant.png";
 import TsStoneGround from "./assets/maps/TilesetStoneGround.png";
 import { BaseNpc } from "./characters/npcs/base_npc";
 import eventManager, { EventManager } from "./gamestate/events";
+
+import * as scenes from './scenes';
 // import playerImage from "./assets/player.png";
-
-const config = {
-  type: Phaser.AUTO,
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-  },
-  physics: {
-    default: "arcade",
-    arcade: {
-      debug: false,
-    },
-  },
-};
-
-const game = new Phaser.Game(config);
 
 export type AttackCursors = {
   primary: Phaser.Input.Keyboard.Key
@@ -107,8 +94,8 @@ export class GameState extends Phaser.Scene {
     const { width, height } = this.scale;
 
     // Add a black rectangle that covers the entire game world
-    const bg = this.add.rectangle(0, 0, width, height, 0x000000);
-    bg.setOrigin(0, 0);
+    // const bg = this.add.rectangle(0, 0, width, height, 0x000000);
+    // bg.setOrigin(0, 0);
 
     // this.player = this.add.rectangle(width / 2, height / 2, 32, 32, 0x000000);
 
@@ -269,5 +256,114 @@ export class GameState extends Phaser.Scene {
   }
 }
 
-game.scene.add("game", GameState);
-game.scene.start("game");
+class GridScene extends Phaser.Scene {
+  private rexUI!: UIPlugin;
+
+  constructor() {
+    super('GridScene');
+  }
+
+  create() {
+    const gridSize = 5; // Number of columns in the grid
+    const squareSize = 80; // Size of each square in pixels
+
+    // Create the grid table
+    const grid = this.rexUI.add.gridTable({
+      x: 0,
+      y: 0,
+      background: this.rexUI.add.roundRectangle(0, 0, 20, 10, 10, 0xffffff),
+      width: gridSize * squareSize,
+      height: gridSize * squareSize,
+      scrollMode: 0,
+      table: {
+        columns: gridSize,
+        mask: {
+          padding: 2,
+        },
+        reuseCellContainer: true,
+      },
+      createCellContainerCallback: (cell, cellContainer) => {
+        const myCell = cellContainer as Phaser.GameObjects.Container;
+        const outline = this.add.graphics();
+        outline.lineStyle(2, 0xffffff);
+        outline.strokeRect(-squareSize / 2, -squareSize / 2, squareSize, squareSize);
+        myCell.add(outline);
+        return myCell;
+      },
+      items: this.generateGridItems(gridSize),
+    }).layout();
+
+    console.log(grid);
+
+    // Center the grid on the screen
+    grid.x = (this.scale.width - grid.width) / 2;
+    grid.y = (this.scale.height - grid.height) / 2;
+
+    // Add the grid to the scene
+    this.add.existing(grid);
+  }
+
+  generateGridItems(gridSize: number) {
+    const items = [];
+    for (let i = 0; i < gridSize * gridSize; i++) {
+      items.push({ id: i });
+    }
+    return items;
+  }
+}
+
+// const config = {
+//   type: Phaser.AUTO,
+//   scale: {
+//     mode: Phaser.Scale.RESIZE,
+//     autoCenter: Phaser.Scale.CENTER_BOTH,
+//   },
+//   // width: 800,
+//   // height: 600,
+//   plugins: {
+//     scene: [
+//       {
+//         key: 'rexUI',
+//         plugin: UIPlugin,
+//         mapping: 'rexUI',
+//       },
+//     ],
+//   },
+//   debugger: true,
+// };
+
+// const game = new Phaser.Game(config);
+// game.scene.add('GridScene', GridScene);
+// game.scene.start('GridScene');
+
+const config = {
+  type: Phaser.AUTO,
+  scale: {
+    mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
+  physics: {
+    default: "arcade",
+    arcade: {
+      debug: true,
+    },
+  },
+  plugins: {
+    scene: [
+      {
+        key: "rexUI",
+        plugin: UIPlugin,
+        mapping: "rexUI"
+      }
+    ]
+  },
+  debugger: true,
+};
+
+const game = new Phaser.Game(config);
+
+// game.scene.add("game", GameState);
+// game.scene.start("game");
+
+game.scene.add("TrainingGroundScene", scenes.TrainingGroundScene, true);
+game.scene.start("TrainingGroundScene");
